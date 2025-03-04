@@ -1,7 +1,7 @@
 import express from 'express';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import authRoutes from './routes/authRoures.js';
+import authRoutes from './routes/authRoutes.js';
 import todoRoutes from './routes/todoRoutes.js';
 import authMiddleware from './middleware/authMiddleware.js';
 
@@ -13,13 +13,13 @@ const __dirname = dirname(__filename);
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.json());
 
-// routes
-app.use('/auth', authRoutes);
-app.use('/todos', authMiddleware, todoRoutes);
-
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// routes
+app.use('/auth', authRoutes)
+app.use('/todos', authMiddleware, todoRoutes)
 
 console.log('hello world');
 const port = process.env.PORT || 5000
