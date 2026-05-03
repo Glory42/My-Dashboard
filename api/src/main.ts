@@ -1,8 +1,34 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import cookieParser from 'cookie-parser';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  const config = app.get(ConfigService);
+
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.use(cookieParser());
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  app.enableCors({
+    origin:
+      config.get('app.nodeEnv') === 'production'
+        ? config.get<string>('FRONTEND_URL')
+        : 'http://localhost:5173',
+    credentials: true,
+  });
+
+  const port = config.get<number>('app.port') ?? 3000;
+  await app.listen(port);
 }
 void bootstrap();
