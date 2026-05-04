@@ -28,7 +28,7 @@ App runs at `http://localhost:5173`. Expects the API at the URL set in `VITE_API
 |----------------|----------------------------------------|
 | `VITE_API_URL` | Backend base URL (no trailing slash)   |
 
-Local: `http://localhost:3000` — Production: `https://api.gorkemkaryol.dev`
+Local: `http://localhost:3000` — Production: your Render service URL or custom API domain.
 
 ## Project Structure
 
@@ -101,7 +101,7 @@ Server state lives in TanStack Query. Key patterns used:
 - **Root directory:** `web/`
 - **Build command:** `npm run build`
 - **Output directory:** `dist`
-- Set `VITE_API_URL=https://api.gorkemkaryol.dev` in the Cloudflare Pages environment variables
-- Custom domain: `dash.gorkemkaryol.dev`
+- Set `VITE_API_URL` in the Cloudflare Pages environment variables (your Render URL or custom API domain)
+- Custom domain via Cloudflare DNS
 
-The API is served from `api.gorkemkaryol.dev` (same registrable domain). The auth cookie uses `sameSite: 'lax'`, which browsers send on same-site cross-origin requests without any third-party cookie restrictions.
+For auth cookies to work in production, the API and frontend must share the same registrable domain (e.g. `api.yourdomain.dev` + `dash.yourdomain.dev`). The cookie uses `sameSite: 'lax'`, which browsers send on same-site cross-origin requests without third-party cookie restrictions.
