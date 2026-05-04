@@ -2,7 +2,7 @@
 
 A personal Kanban-style todo app inspired by Linux virtual workspaces. Switch between isolated workspaces, each containing its own Kanban board with columns and cards — just like flipping between virtual desktops on a tiling window manager.
 
-Live at: **dash.gorkemkaryol.dev** (Cloudflare Pages + Render)
+Live at: **dash.gorkemkaryol.dev**
 
 ## Concept
 
@@ -25,9 +25,9 @@ Workspace: Work          Workspace: Personal
 |------------|---------------------------------------------------|
 | Frontend   | React 19, Vite, TanStack Router, TanStack Query   |
 | Backend    | NestJS 11, TypeScript                             |
-| Database   | Neon PostgreSQL via Prisma ORM                    |
+| Database   | Neon PostgreSQL via Prisma 7 ORM                  |
 | Auth       | JWT in httpOnly cookie, bcrypt password hashing   |
-| Deploy     | Render (backend), Cloudflare Pages (frontend)     |
+| Deploy     | Render (API), Cloudflare Pages (frontend)         |
 
 ## Project Structure
 
@@ -52,14 +52,21 @@ Dashboard-Todo/
 │       └── schema.prisma
 └── web/
     └── src/
-        ├── routes/               # file-based routing (TanStack Router)
+        ├── routes/               # thin file-based route wrappers (TanStack Router)
         │   ├── __root.tsx
+        │   ├── index.tsx         # redirects to /dashboard
         │   ├── login.tsx
         │   ├── register.tsx
         │   └── _auth/            # authenticated layout (GET /auth/me guard)
-        ├── components/           # Sidebar, Board, Column, Card, Modal
-        ├── api/                  # fetch wrapper (baseURL + credentials:'include')
-        └── hooks/                # TanStack Query hooks
+        │       ├── route.tsx
+        │       ├── dashboard.tsx
+        │       └── settings.tsx
+        ├── features/             # all UI and business logic
+        │   ├── auth/             # LoginPage, RegisterPage
+        │   ├── board/            # Board, Column, KanbanCard, modals, TopBar, DashboardPage
+        │   └── settings/         # SettingsPage
+        ├── api/                  # fetch client + TypeScript types
+        └── lib/                  # shared utilities (cn)
 ```
 
 ## Database Schema
@@ -103,7 +110,7 @@ API runs at `http://localhost:3000`.
 ```bash
 cd web
 npm install
-cp .env.example .env   # set VITE_API_URL
+cp .env.example .env   # set VITE_API_URL=http://localhost:3000
 npm run dev
 ```
 
@@ -114,12 +121,12 @@ App runs at `http://localhost:5173`.
 All routes marked 🔒 require the JWT cookie (set by `POST /auth/login`).
 
 ### Auth
-| Method | Path             | Description                          |
-|--------|------------------|--------------------------------------|
-| POST   | /auth/register   | Create account (email + password)    |
-| POST   | /auth/login      | Set httpOnly JWT cookie              |
-| POST   | /auth/logout     | Clear cookie                         |
-| GET    | /auth/me         | Current user info 🔒                 |
+| Method | Path             | Description                               |
+|--------|------------------|-------------------------------------------|
+| POST   | /auth/register   | Create account (email + password)         |
+| POST   | /auth/login      | Set httpOnly JWT cookie                   |
+| POST   | /auth/logout     | Clear cookie                              |
+| GET    | /auth/me         | Current user info 🔒                      |
 | GET    | /health          | Uptime check — returns `{ status: 'ok' }` |
 
 ### Workspaces 🔒
@@ -140,26 +147,26 @@ All routes marked 🔒 require the JWT cookie (set by `POST /auth/login`).
 | DELETE | /columns/:id                | Delete (cascades cards)        |
 
 ### Cards 🔒
-| Method | Path                  | Description                           |
-|--------|-----------------------|---------------------------------------|
-| GET    | /cards?columnId=xxx   | Cards in a column, ordered by position|
-| POST   | /cards                | Create card                           |
-| PATCH  | /cards/:id            | Update title, tag                     |
+| Method | Path                  | Description                                |
+|--------|-----------------------|--------------------------------------------|
+| GET    | /cards?columnId=xxx   | Cards in a column, ordered by position     |
+| POST   | /cards                | Create card                                |
+| PATCH  | /cards/:id            | Update title, tag                          |
 | PATCH  | /cards/:id/move       | Move card — body: `{ columnId, position }` |
-| DELETE | /cards/:id            | Delete card                           |
+| DELETE | /cards/:id            | Delete card                                |
 
 ## Environment Variables
 
 ### API (`api/.env`)
 
-| Variable       | Description                                    |
-|----------------|------------------------------------------------|
-| `DATABASE_URL` | PostgreSQL connection string                   |
-| `JWT_SECRET`   | Secret for signing JWT tokens                  |
-| `JWT_EXPIRES_IN` | Token lifetime (e.g. `7d`, `24h`)           |
-| `FRONTEND_URL` | Allowed CORS origin (e.g. `http://localhost:5173`) |
-| `NODE_ENV`     | `development` or `production`                  |
-| `PORT`         | Server port (default: `3000`)                  |
+| Variable         | Description                                            |
+|------------------|--------------------------------------------------------|
+| `DATABASE_URL`   | PostgreSQL connection string                           |
+| `JWT_SECRET`     | Secret for signing JWT tokens                          |
+| `JWT_EXPIRES_IN` | Token lifetime (e.g. `7d`, `24h`)                     |
+| `FRONTEND_URL`   | Allowed CORS origin (e.g. `https://dash.gorkemkaryol.dev`) |
+| `NODE_ENV`       | `development` or `production`                          |
+| `PORT`           | Server port (Render sets this automatically)           |
 
 See [`api/.env.example`](api/.env.example).
 
@@ -167,20 +174,24 @@ See [`api/.env.example`](api/.env.example).
 
 | Variable        | Description                |
 |-----------------|----------------------------|
-| `VITE_API_URL`  | Backend URL                |
+| `VITE_API_URL`  | Backend URL (no trailing slash) |
+
+Local: `http://localhost:3000` — Production: `https://api.gorkemkaryol.dev`
 
 ## Deployment
 
-| Service            | Role                | Notes                                         |
-|--------------------|---------------------|-----------------------------------------------|
-| Render             | Backend API         | Free tier sleeps after 15min; Uptime Robot keeps it awake |
-| Cloudflare Pages   | Frontend static     | Custom domain: `dash.gorkemkaryol.dev`        |
-| Neon               | PostgreSQL          | Serverless Postgres                           |
-| Uptime Robot       | Health pings        | Hits `GET /health` every 5 minutes            |
+| Service            | Role                | URL / Notes                                       |
+|--------------------|---------------------|---------------------------------------------------|
+| Render             | Backend API         | Custom domain: `api.gorkemkaryol.dev`             |
+| Cloudflare Pages   | Frontend static     | Custom domain: `dash.gorkemkaryol.dev`            |
+| Neon               | PostgreSQL          | Serverless Postgres                               |
+| Uptime Robot       | Health pings        | Hits `GET /health` every 5 minutes (free tier)    |
 
-**Cross-origin cookie note:** Frontend and backend are on different domains in production. The cookie must be set with `sameSite: 'none', secure: true`, and every fetch must include `credentials: 'include'`. In local dev, `sameSite: 'lax'` is fine.
+**Cookie architecture:** The API lives at `api.gorkemkaryol.dev` and the frontend at `dash.gorkemkaryol.dev`. Both share the `gorkemkaryol.dev` registrable domain, making them **same-site**. The auth cookie uses `sameSite: 'lax'` and `secure: true` — no need for `sameSite: 'none'`, and no third-party cookie restrictions apply.
 
-**Production build script:** `"build": "prisma generate && nest build"` — Prisma client must be generated before NestJS compiles.
+**Cloudflare DNS:** Add a CNAME record `api → dashboard-api-ccyl.onrender.com` with the proxy turned **off** (grey cloud) so Render can handle TLS. Then add `api.gorkemkaryol.dev` as a custom domain in the Render dashboard.
+
+**Production build:** The API build script runs `prisma generate && npx @nestjs/cli build`. Prisma client must be generated before TypeScript compilation — without it, `@prisma/client` exports nothing.
 
 ## Scripts
 
@@ -190,7 +201,7 @@ See [`api/.env.example`](api/.env.example).
 |------------------------|------------------------------|
 | `npm run start:dev`    | Dev server with hot reload   |
 | `npm run start:prod`   | Run compiled production build |
-| `npm run build`        | Compile TypeScript to `dist/` |
+| `npm run build`        | `prisma generate` + compile TypeScript |
 | `npm run test`         | Unit tests                   |
 | `npm run test:e2e`     | End-to-end tests             |
 | `npm run lint`         | ESLint with auto-fix         |

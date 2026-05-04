@@ -1,14 +1,16 @@
 # Dashboard Todo — Frontend
 
-React frontend for the Dashboard Todo app. Provides the workspace-switching UI and Kanban board interface.
+React frontend for the Dashboard Todo app. Provides the workspace-switching UI and Kanban board interface with drag-and-drop support.
 
 ## Stack
 
 - **React 19** — UI
-- **Vite 8** — dev server and bundler
-- **TanStack Router** — file-based routing
-- **TanStack Query** — server state and data fetching
-- **TypeScript 6**
+- **Vite** — dev server and bundler
+- **TanStack Router** — file-based routing with type-safe navigation
+- **TanStack Query** — server state, caching, and optimistic updates
+- **@dnd-kit** — drag-and-drop for cards across columns
+- **Tailwind v4** — utility CSS via `@theme` block (no config file)
+- **TypeScript**
 
 ## Setup
 
@@ -18,7 +20,7 @@ cp .env.example .env   # set VITE_API_URL
 npm run dev
 ```
 
-App runs at `http://localhost:5173`. Expects the backend at the URL set in `VITE_API_URL`.
+App runs at `http://localhost:5173`. Expects the API at the URL set in `VITE_API_URL`.
 
 ## Environment Variables
 
@@ -26,30 +28,64 @@ App runs at `http://localhost:5173`. Expects the backend at the URL set in `VITE
 |----------------|----------------------------------------|
 | `VITE_API_URL` | Backend base URL (no trailing slash)   |
 
-Local: `http://localhost:3000`  
-Production: your Render URL
+Local: `http://localhost:3000` — Production: `https://api.gorkemkaryol.dev`
+
+## Project Structure
+
+```
+src/
+├── routes/               # thin TanStack Router file-based wrappers
+│   ├── __root.tsx        # root layout, injects QueryClient into router context
+│   ├── index.tsx         # redirects / → /dashboard
+│   ├── login.tsx
+│   ├── register.tsx
+│   └── _auth/            # _ prefix = layout route (not part of the URL)
+│       ├── route.tsx     # beforeLoad: GET /auth/me → 401 redirects to /login
+│       ├── dashboard.tsx # → renders DashboardPage
+│       └── settings.tsx  # → renders SettingsPage
+├── features/             # all real UI and logic lives here
+│   ├── auth/
+│   │   ├── LoginPage.tsx
+│   │   └── RegisterPage.tsx
+│   ├── board/
+│   │   ├── DashboardPage.tsx      # workspace switcher shell
+│   │   ├── TopBar.tsx             # workspace pills + avatar dropdown
+│   │   ├── Board.tsx              # DnD context + column list
+│   │   ├── Column.tsx             # droppable column with sticky header/footer
+│   │   ├── SortableCard.tsx       # useSortable wrapper (opacity ghost)
+│   │   ├── KanbanCard.tsx         # card UI, hover actions, optimistic mutations
+│   │   ├── AddWorkspaceModal.tsx
+│   │   ├── EditWorkspaceModal.tsx
+│   │   ├── AddColumnModal.tsx
+│   │   ├── EditColumnModal.tsx
+│   │   ├── AddCardModal.tsx
+│   │   └── EditCardModal.tsx
+│   └── settings/
+│       └── SettingsPage.tsx
+├── api/
+│   ├── client.ts         # fetch wrapper: baseURL + credentials: 'include'
+│   └── types.ts          # TypeScript types matching API responses
+└── lib/
+    └── utils.ts          # cn() helper (clsx + tailwind-merge)
+```
+
+Routes are intentionally thin — they just call `createFileRoute` and import the matching feature component. All logic, mutations, and UI live in `features/`.
 
 ## Routing
 
-File-based routing via TanStack Router. Add pages as files under `src/routes/`. The router plugin auto-generates `routeTree.gen.ts` on dev server start — don't edit it.
+File-based routing via TanStack Router. The `@tanstack/router-plugin/vite` plugin auto-generates `src/routes/routeTree.gen.ts` on dev server start — don't edit it manually.
 
-```
-routes/
-├── __root.tsx              # root layout
-├── index.tsx               # → redirect to /dashboard
-├── login.tsx
-├── register.tsx
-└── _auth/                  # _ prefix = layout route (not in URL)
-    ├── _auth.tsx           # loader: GET /auth/me → 401 redirects to /login
-    ├── _auth.dashboard.tsx # workspace list
-    └── _auth.workspace.$id.tsx  # kanban board ($id = dynamic segment)
-```
+The `_auth/route.tsx` layout runs a `beforeLoad` that calls `GET /auth/me`. A 401 response redirects to `/login`; success injects the user into router context for child routes.
 
 ## Data Fetching
 
-All API calls go through `src/api/client.ts` — a thin fetch wrapper that sets `baseURL` from `VITE_API_URL` and includes `credentials: 'include'` on every request (required for the httpOnly cookie to be sent cross-origin).
+All API calls go through `src/api/client.ts`, which sets `baseURL` from `VITE_API_URL` and includes `credentials: 'include'` on every request (required for the httpOnly cookie to be sent cross-origin).
 
-Server state lives in TanStack Query hooks under `src/hooks/`. Never put API data into local component state.
+Server state lives in TanStack Query. Key patterns used:
+
+- **Optimistic updates** for card delete and move: `cancelQueries` → snapshot → `setQueryData` → API call → rollback `onError`
+- **`queryClient.setQueryData`** after create/edit to avoid a full refetch
+- **`ensureQueryData`** in `beforeLoad` to prefetch the current user before rendering
 
 ## Scripts
 
@@ -62,8 +98,10 @@ Server state lives in TanStack Query hooks under `src/hooks/`. Never put API dat
 
 ## Deployment (Cloudflare Pages)
 
-- Root directory: `web/`
-- Build command: `npm run build`
-- Output directory: `dist`
-- Add `VITE_API_URL` env variable pointing to the Render backend URL
-- Custom domain: `dash.gorkemkaryol.dev` via Cloudflare DNS CNAME
+- **Root directory:** `web/`
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+- Set `VITE_API_URL=https://api.gorkemkaryol.dev` in the Cloudflare Pages environment variables
+- Custom domain: `dash.gorkemkaryol.dev`
+
+The API is served from `api.gorkemkaryol.dev` (same registrable domain). The auth cookie uses `sameSite: 'lax'`, which browsers send on same-site cross-origin requests without any third-party cookie restrictions.
