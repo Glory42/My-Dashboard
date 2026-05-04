@@ -4,7 +4,7 @@ A personal Kanban-style todo app inspired by Linux virtual workspaces. Switch be
 
 Live at: **dash.gorkemkaryol.dev**
 
-![Dashboard Todo Preview](Preview/Preview-Image.png)
+![Dashboard Todo Preview](preview/preview-image.png)
 
 ## Concept
 
