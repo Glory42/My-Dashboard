@@ -4,6 +4,8 @@ A personal Kanban-style todo app inspired by Linux virtual workspaces. Switch be
 
 Live at: **dash.gorkemkaryol.dev**
 
+![Dashboard Todo Preview](Preview/Preview-Image.png)
+
 ## Concept
 
 Each **workspace** is an independent Kanban board. You can have a `Work` workspace, a `Personal` workspace, a `Side Projects` workspace, and jump between them the same way you jump between Linux virtual desktops. Within each workspace you organize tasks into **columns** (e.g. To Do, In Progress, Done) and track them as **cards**.
@@ -164,7 +166,7 @@ All routes marked 🔒 require the JWT cookie (set by `POST /auth/login`).
 | `DATABASE_URL`   | PostgreSQL connection string                           |
 | `JWT_SECRET`     | Secret for signing JWT tokens                          |
 | `JWT_EXPIRES_IN` | Token lifetime (e.g. `7d`, `24h`)                     |
-| `FRONTEND_URL`   | Allowed CORS origin (e.g. `https://dash.gorkemkaryol.dev`) |
+| `FRONTEND_URL`   | Allowed CORS origin (e.g. `https://dash.yourdomain.dev`) |
 | `NODE_ENV`       | `development` or `production`                          |
 | `PORT`           | Server port (Render sets this automatically)           |
 
@@ -172,40 +174,38 @@ See [`api/.env.example`](api/.env.example).
 
 ### Web (`web/.env`)
 
-| Variable        | Description                |
-|-----------------|----------------------------|
-| `VITE_API_URL`  | Backend URL (no trailing slash) |
+| Variable        | Description                          |
+|-----------------|--------------------------------------|
+| `VITE_API_URL`  | Backend URL (no trailing slash)      |
 
-Local: `http://localhost:3000` — Production: `https://api.gorkemkaryol.dev`
+Local: `http://localhost:3000` — Production: your Render service URL or custom API domain.
 
 ## Deployment
 
-| Service            | Role                | URL / Notes                                       |
-|--------------------|---------------------|---------------------------------------------------|
-| Render             | Backend API         | Custom domain: `api.gorkemkaryol.dev`             |
-| Cloudflare Pages   | Frontend static     | Custom domain: `dash.gorkemkaryol.dev`            |
-| Neon               | PostgreSQL          | Serverless Postgres                               |
-| Uptime Robot       | Health pings        | Hits `GET /health` every 5 minutes (free tier)    |
+| Service            | Role                | Notes                                          |
+|--------------------|---------------------|------------------------------------------------|
+| Render             | Backend API         | Free tier; Uptime Robot keeps it awake         |
+| Cloudflare Pages   | Frontend static     | Custom domain via Cloudflare DNS               |
+| Neon               | PostgreSQL          | Serverless Postgres                            |
+| Uptime Robot       | Health pings        | Hits `GET /health` every 5 minutes             |
 
-**Cookie architecture:** The API lives at `api.gorkemkaryol.dev` and the frontend at `dash.gorkemkaryol.dev`. Both share the `gorkemkaryol.dev` registrable domain, making them **same-site**. The auth cookie uses `sameSite: 'lax'` and `secure: true` — no need for `sameSite: 'none'`, and no third-party cookie restrictions apply.
+**Cookie architecture:** For the auth cookie to work cross-origin, the API and frontend should share the same registrable domain (e.g. `api.yourdomain.dev` and `dash.yourdomain.dev`). This allows `sameSite: 'lax'` instead of `sameSite: 'none'`, avoiding modern browser third-party cookie restrictions. If they're on completely different domains, browsers will block the cookie.
 
-**Cloudflare DNS:** Add a CNAME record `api → dashboard-api-ccyl.onrender.com` with the proxy turned **off** (grey cloud) so Render can handle TLS. Then add `api.gorkemkaryol.dev` as a custom domain in the Render dashboard.
-
-**Production build:** The API build script runs `prisma generate && npx @nestjs/cli build`. Prisma client must be generated before TypeScript compilation — without it, `@prisma/client` exports nothing.
+**Production build:** The API build script runs `prisma generate && npx @nestjs/cli build`. Prisma client must be generated before TypeScript compilation — without it `@prisma/client` exports nothing.
 
 ## Scripts
 
 ### API
 
-| Command                | Description                  |
-|------------------------|------------------------------|
-| `npm run start:dev`    | Dev server with hot reload   |
-| `npm run start:prod`   | Run compiled production build |
+| Command                | Description                            |
+|------------------------|----------------------------------------|
+| `npm run start:dev`    | Dev server with hot reload             |
+| `npm run start:prod`   | Run compiled production build          |
 | `npm run build`        | `prisma generate` + compile TypeScript |
-| `npm run test`         | Unit tests                   |
-| `npm run test:e2e`     | End-to-end tests             |
-| `npm run lint`         | ESLint with auto-fix         |
-| `npm run format`       | Prettier format              |
+| `npm run test`         | Unit tests                             |
+| `npm run test:e2e`     | End-to-end tests                       |
+| `npm run lint`         | ESLint with auto-fix                   |
+| `npm run format`       | Prettier format                        |
 
 ### Web
 
