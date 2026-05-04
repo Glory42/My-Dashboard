@@ -43,7 +43,7 @@ src/
 
 Login sets a `token` httpOnly cookie. Every protected route reads that cookie via `AuthGuard`.
 
-The cookie uses `sameSite: 'lax'` in both dev and production. In production the API is served from `api.gorkemkaryol.dev` and the frontend from `dash.gorkemkaryol.dev` — same registrable domain (`gorkemkaryol.dev`), so browsers treat requests as same-site and send the cookie without requiring `sameSite: 'none'`. `secure: true` is applied only in production.
+The cookie uses `sameSite: 'lax'` in both dev and production. In production, the API and frontend should share the same registrable domain (e.g. `api.yourdomain.dev` and `dash.yourdomain.dev`) so browsers treat requests as same-site and send the cookie without requiring `sameSite: 'none'`. `secure: true` is applied only in production.
 
 ## Ownership
 
@@ -79,7 +79,7 @@ See [`.env.example`](.env.example).
 | `DATABASE_URL`   | Neon (or local) PostgreSQL connection string           |
 | `JWT_SECRET`     | Secret for signing tokens — long random string         |
 | `JWT_EXPIRES_IN` | Token lifetime, e.g. `7d`                             |
-| `FRONTEND_URL`   | CORS allowed origin, e.g. `https://dash.gorkemkaryol.dev` |
+| `FRONTEND_URL`   | CORS allowed origin, e.g. `https://dash.yourdomain.dev`   |
 | `NODE_ENV`       | `development` or `production`                          |
 | `PORT`           | Port to listen on (Render sets this automatically)     |
 
@@ -89,7 +89,7 @@ See [`.env.example`](.env.example).
 - **Build command:** `npm install && npm run build`
 - **Start command:** `npm run start:prod`
 - Set all env variables in the Render dashboard
-- Add `api.gorkemkaryol.dev` as a custom domain (Cloudflare DNS: CNAME `api → dashboard-api-ccyl.onrender.com`, proxy off)
+- Optionally add a custom domain so the API and frontend share the same registrable domain (required for `sameSite: 'lax'` cookies to work cross-subdomain)
 - Add an Uptime Robot monitor on `GET /health` every 5 minutes to prevent free-tier cold starts
 
 > **Why `prisma generate` in the build step?** Render installs packages but doesn't auto-generate the Prisma client. Without `prisma generate`, `@prisma/client` exports nothing and TypeScript compilation fails.
