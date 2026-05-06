@@ -24,11 +24,9 @@ interface Props {
 export default function Board({ workspace }: Props) {
   const [addingColumn, setAddingColumn] = useState(false)
   const [activeId, setActiveId]         = useState<UniqueIdentifier | null>(null)
-  // Local columns state for live drag preview
   const [columns, setColumns]           = useState<Column[]>(workspace.columns)
   const qc = useQueryClient()
 
-  // Sync local state when workspace data changes (after API settle)
   useEffect(() => { setColumns(workspace.columns) }, [workspace])
 
   const sensors = useSensors(
