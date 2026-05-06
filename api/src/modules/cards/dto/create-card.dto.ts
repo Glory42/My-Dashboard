@@ -11,6 +11,10 @@ export class CreateCardDto {
 
   @IsString()
   @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
   tag?: string;
 
   @IsString()

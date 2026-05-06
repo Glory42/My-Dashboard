@@ -19,17 +19,19 @@ interface Props {
 }
 
 export default function EditCardModal({ card, workspaceId, onClose }: Props) {
-  const [title, setTitle] = useState(card.title)
-  const [tag, setTag]     = useState<typeof TAGS[0] | null>(
+  const [title, setTitle]         = useState(card.title)
+  const [description, setDescription] = useState(card.description ?? '')
+  const [tag, setTag]             = useState<typeof TAGS[0] | null>(
     card.tag ? (TAGS.find(t => t.label === card.tag) ?? null) : null
   )
   const qc = useQueryClient()
 
   const save = useMutation({
     mutationFn: () => api.patch(`/cards/${card.id}`, {
-      title:    title.trim() || undefined,
-      tag:      tag?.label ?? null,
-      tagColor: tag?.color ?? null,
+      title:       title.trim() || undefined,
+      description: description.trim() || null,
+      tag:         tag?.label ?? null,
+      tagColor:    tag?.color ?? null,
     }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['workspace', workspaceId] })
@@ -64,6 +66,14 @@ export default function EditCardModal({ card, workspaceId, onClose }: Props) {
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Escape') onClose() }}
             className="bg-rp-overlay border border-rp-hl-med rounded px-3 py-2 text-sm text-rp-text font-mono focus:outline-none focus:border-rp-pine transition-colors"
+          />
+          <textarea
+            placeholder="description (optional)"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+            rows={3}
+            className="bg-rp-overlay border border-rp-hl-med rounded px-3 py-2 text-sm text-rp-text font-mono placeholder:text-rp-muted focus:outline-none focus:border-rp-pine transition-colors resize-none"
           />
 
           <div className="flex flex-wrap gap-1.5">

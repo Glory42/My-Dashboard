@@ -53,6 +53,7 @@ export class CardsService {
       data: {
         columnId: dto.columnId,
         title: dto.title,
+        description: dto.description,
         tag: dto.tag,
         tagColor: dto.tagColor,
         position: (last?.position ?? -1) + 1,

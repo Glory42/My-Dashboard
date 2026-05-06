@@ -18,6 +18,7 @@ export interface Card {
   id: string
   columnId: string
   title: string
+  description?: string | null
   tag?: string | null
   tagColor?: string | null
   position: number

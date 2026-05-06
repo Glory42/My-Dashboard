@@ -18,16 +18,18 @@ interface Props {
 }
 
 export default function AddCardModal({ columnId, workspaceId, onClose }: Props) {
-  const [title, setTitle]   = useState('')
-  const [tag, setTag]       = useState<typeof TAGS[0] | null>(null)
+  const [title, setTitle]         = useState('')
+  const [description, setDescription] = useState('')
+  const [tag, setTag]             = useState<typeof TAGS[0] | null>(null)
   const qc = useQueryClient()
 
   const add = useMutation({
     mutationFn: () => api.post('/cards', {
       columnId,
-      title: title.trim(),
-      tag:      tag?.label,
-      tagColor: tag?.color,
+      title:       title.trim(),
+      description: description.trim() || undefined,
+      tag:         tag?.label,
+      tagColor:    tag?.color,
     }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['workspace', workspaceId] })
@@ -63,6 +65,14 @@ export default function AddCardModal({ columnId, workspaceId, onClose }: Props) 
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Escape') onClose() }}
             className="bg-rp-overlay border border-rp-hl-med rounded px-3 py-2 text-sm text-rp-text font-mono placeholder:text-rp-muted focus:outline-none focus:border-rp-pine transition-colors"
+          />
+          <textarea
+            placeholder="description (optional)"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+            rows={3}
+            className="bg-rp-overlay border border-rp-hl-med rounded px-3 py-2 text-sm text-rp-text font-mono placeholder:text-rp-muted focus:outline-none focus:border-rp-pine transition-colors resize-none"
           />
 
           {/* Tag picker */}

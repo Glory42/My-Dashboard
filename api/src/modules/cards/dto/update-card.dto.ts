@@ -7,6 +7,10 @@ export class UpdateCardDto {
 
   @IsString()
   @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
   tag?: string;
 
   @IsString()
